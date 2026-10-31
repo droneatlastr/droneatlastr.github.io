@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P1 Ticari Uçuş Hazırlık</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Yön: havacılık haritası + uçuş şeridi (flight strip). Koyu lacivert harita zemini, tek turuncu vurgu, veri her yerde mono. */
+:root{
+  --chart:#0f1a2e;      /* harita zemini */
+  --panel:#16243d;      /* şerit / panel */
+  --line:#2a3b5c;       /* ızgara, ayraç */
+  --ink:#e9eef7;        /* ana yazı */
+  --muted:#9fb0cc;      /* ikincil yazı */
+  --signal:#f28c28;     /* tek vurgu: turuncu */
+  --ok:#4fbf8b;
+  --display:"Big Shoulders Display","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--chart);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+a{color:var(--signal)}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+.mono{font-family:var(--mono)}
+h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:.01em;text-wrap:balance;margin:0;line-height:1.02;text-transform:uppercase}
+h2{font-size:clamp(34px,5vw,52px)}
+h3{font-size:26px;font-weight:600}
+p{margin:0;max-width:65ch}
+.lede{color:var(--muted)}
+
+/* HERO */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+#contour{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+.hero .wrap{position:relative;display:grid;grid-template-columns:1.25fr .9fr;gap:40px;padding-top:56px;padding-bottom:56px;align-items:end}
+.tag{font-family:var(--mono);font-size:13px;color:var(--signal);letter-spacing:.08em;text-transform:uppercase}
+.hero h1{font-size:clamp(46px,7vw,84px);margin:14px 0 20px}
+.hero h1 em{font-style:normal;color:var(--signal)}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:4px;font-weight:600;font-family:var(--body);font-size:16px;text-decoration:none;cursor:pointer;border:1px solid var(--signal)}
+.btn.primary{background:var(--signal);color:#1a1206}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--muted)}
+
+/* Uçuş şeridi: geri sayım */
+.strip{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--signal);font-family:var(--mono)}
+.strip .row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+.strip .row:last-child{border-bottom:0}
+.strip .cell{padding:10px 14px;border-right:1px solid var(--line)}
+.strip .cell:last-child{border-right:0}
+.strip .k{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.strip .v{font-size:15px}
+.strip .big{font-family:var(--display);font-size:76px;font-weight:800;line-height:1;color:var(--signal);font-variant-numeric:tabular-nums}
+
+section{padding:64px 0;border-bottom:1px solid var(--line)}
+.sec-head{display:grid;grid-template-columns:200px 1fr;gap:24px;margin-bottom:32px;align-items:start}
+.sec-head .tag{padding-top:10px}
+
+/* Eşleme aracı */
+.tool{display:grid;grid-template-columns:280px 1fr;gap:0;border:1px solid var(--line);background:var(--panel)}
+.tool fieldset{border:0;margin:0;padding:18px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.tool legend{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding:0}
+.opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:4px;cursor:pointer;font-family:var(--mono);font-size:15px}
+.opt:has(input:checked){border-color:var(--signal);background:rgba(242,140,40,.08)}
+.opt input{accent-color:var(--signal)}
+.out{padding:22px 24px;display:grid;gap:14px;align-content:start}
+.map{display:flex;align-items:center;gap:14px;font-family:var(--display);font-weight:800;font-size:44px}
+.map .arrow{color:var(--muted);font-size:30px}
+.map .new{color:var(--signal)}
+.out ul{margin:0;padding-left:20px;color:var(--ink)}
+.out li{margin:4px 0}
+.fine{font-size:13px;color:var(--muted)}
+
+/* Paketler: şerit satırları */
+.packs{display:grid;gap:0;border:1px solid var(--line)}
+.pack{display:grid;grid-template-columns:72px 1fr 180px;border-bottom:1px solid var(--line);background:var(--panel)}
+.pack:last-child{border-bottom:0}
+.pack .id{font-family:var(--mono);font-size:13px;color:var(--muted);padding:22px 0 0 18px;border-right:1px solid var(--line)}
+.pack .body{padding:22px 24px;display:grid;gap:10px}
+.pack .body ul{margin:0;padding-left:20px;color:var(--muted);font-size:15px}
+.pack .price{border-left:1px solid var(--line);padding:22px 18px;display:flex;flex-direction:column;justify-content:space-between;gap:12px}
+.pack .amount{font-family:var(--display);font-size:40px;font-weight:800;font-variant-numeric:tabular-nums}
+.pack .unit{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.pack.featured{border-left:6px solid var(--signal)}
+.pill{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--signal);color:var(--signal);border-radius:20px;width:max-content}
+.pill.soon{border-color:var(--muted);color:var(--muted)}
+
+/* Pilot */
+.pilot{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.facts{display:grid;grid-template-columns:repeat(2,1fr);border:1px solid var(--line)}
+.fact{padding:16px 18px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel)}
+.fact:nth-child(2n){border-right:0}
+.fact:nth-last-child(-n+2){border-bottom:0}
+.fact .n{font-family:var(--display);font-size:42px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.fact .l{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+/* Talep formu */
+.order{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+form{display:grid;gap:14px;background:var(--panel);border:1px solid var(--line);padding:22px}
+label{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:grid;gap:6px}
+input[type=text],select,textarea{font:inherit;font-family:var(--body);font-size:16px;color:var(--ink);background:var(--chart);border:1px solid var(--line);border-radius:4px;padding:10px 12px;text-transform:none;letter-spacing:0}
+textarea{min-height:90px;resize:vertical}
+pre#msg{white-space:pre-wrap;font-family:var(--mono);font-size:14px;background:var(--chart);border:1px dashed var(--line);padding:14px;margin:0;color:var(--ink)}
+.status{font-family:var(--mono);font-size:13px;color:var(--ok);min-height:1.2em}
+
+/* SSS */
+details{border-top:1px solid var(--line);padding:16px 0}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::after{content:"+";font-family:var(--mono);color:var(--signal)}
+details[open] summary::after{content:"–"}
+details p{margin-top:10px;color:var(--muted)}
+
+footer{padding:36px 0 48px;color:var(--muted);font-size:14px}
+footer .wrap{display:grid;gap:10px}
+
+@media (max-width:820px){
+  .hero .wrap,.pilot,.order,.tool{grid-template-columns:1fr}
+  .tool fieldset{border-right:0;border-bottom:1px solid var(--line)}
+  .sec-head{grid-template-columns:1fr;gap:8px}
+  .pack{grid-template-columns:1fr}
+  .pack .id{border-right:0;padding:16px 18px 0}
+  .pack .price{border-left:0;border-top:1px solid var(--line);flex-direction:row;align-items:center}
+}
+@media (prefers-reduced-motion:no-preference){
+  .strip{animation:slide .7s ease-out both}
+  @keyframes slide{from{transform:translateX(18px);opacity:.4}to{transform:none;opacity:1}}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <canvas id="contour" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div>
+      <div class="tag">SHT-İHA · 30 Temmuz 2026'da yürürlüğe girdi</div>
+      <h1>Lisansın değişti.<br><em>Ticari uçmaya</em> hazır mısın?</h1>
+      <p class="lede">Yeni talimatla İHA0, İHA1, İHA2 ve İHA3 belgeleri P0, P1 ve P2 lisanslarına geçiyor. Ticari uçuş için P1 gerekiyor. Hangi belgenin neye denk geldiğini, ne yapman gerektiğini ve işe nasıl başlayacağını sahada 500 saatten fazla uçmuş bir pilotla adım adım netleştir.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="#talep">Ücretsiz kontrol listesini iste</a>
+        <a class="btn ghost" href="#talep" data-pick="ehliyet">Ehliyetim yok, P1 istiyorum</a>
+        <a class="btn ghost" href="#paketler">Paketleri gör</a>
+      </div>
+    </div>
+    <div class="strip" role="group" aria-label="Geçiş süresi">
+      <div class="row">
+        <div class="cell"><div class="k">Talimat</div><div class="v">SHT-İHA</div></div>
+        <div class="cell"><div class="k">Yürürlük</div><div class="v">30.07.2026</div></div>
+      </div>
+      <div class="row" style="grid-template-columns:1fr">
+        <div class="cell"><div class="k">Bugünden 31.07.2027'ye kalan gün</div><div class="big" id="days">—</div><div class="v" id="dm" style="margin-top:6px;color:var(--muted)">—</div></div>
+      </div>
+      <div class="row">
+        <div class="cell"><div class="k">Son tarih</div><div class="v">31.07.2027</div></div>
+        <div class="cell"><div class="k">Bugün</div><div class="v" id="today">—</div></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+<section id="esleme">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="tag">01 · Lisans eşleme</div>
+      <div><h2>Belgen yeni sistemde neye denk geliyor?</h2></div>
+    </div>
+    <div class="tool">
+      <fieldset>
+        <legend>Bugün elindeki belge</legend>
+        <label class="opt"><input type="radio" name="belge" id="b-yok" value="yok"> Belgem yok</label>
+        <label class="opt"><input type="radio" name="belge" id="b-0" value="0" checked> İHA0</label>
+        <label class="opt"><input type="radio" name="belge" id="b-1" value="1"> İHA1</label>
+        <label class="opt"><input type="radio" name="belge" id="b-2" value="2"> İHA2</label>
+        <label class="opt"><input type="radio" name="belge" id="b-3" value="3"> İHA3</label>
+      </fieldset>
+      <div class="out" aria-live="polite">
+        <div class="map"><span id="m-old">İHA0</span><span class="arrow">→</span><span class="new" id="m-new">P0</span></div>
+        <ul id="m-list"></ul>
+        <div id="m-cta" style="display:none;border:1px solid var(--signal);background:rgba(242,140,40,.08);border-radius:4px;padding:14px 16px">
+          <p style="margin:0 0 10px"><b>P1 almak ya da ehliyet çıkarmak mı istiyorsun?</b> DM'den yaz, sana uygun SHGM yetkili eğitim kurumunu ve izlemen gereken yolu söyleyeyim.</p>
+          <a class="btn primary" href="#talep" data-pick="ehliyet">DM'den yaz</a>
+        </div>
+        <p class="fine">Kaynak: SHT-İHA (30.07.2026) metni, ilgili maddeler parantez içinde. Bu araç bilgilendirme amaçlıdır; kendi durumun için güncel talimat metnini ve SHGM duyurularını esas al.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="paketler">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="tag">02 · Paketler</div>
+      <div><h2>İhtiyacın kadarını al</h2><p class="lede" style="margin-top:10px">Lisans eğitimi vermiyorum; o iş SHGM'nin yetkilendirdiği eğitim kurumlarının. Ben lisansını aldıktan sonraki kısmı, yani ticari işi kurmayı ve doğru yürütmeyi anlatıyorum.</p></div>
+    </div>
+    <div class="packs">
+      <div class="pack featured">
+        <div class="id">PKT-00</div>
+        <div class="body">
+          <span class="pill">Ücretsiz yönlendirme</span>
+          <h3>Ehliyetim yok · P1 almak istiyorum</h3>
+          <p class="lede">Hiç belgen yoksa ya da ticari uçmak için P1 lisansı almak istiyorsan bana DM'den yaz. Hangi lisansı alman gerektiğini ve sana uygun, SHGM'nin yetkilendirdiği eğitim kurumunu söyleyeyim.</p>
+          <ul>
+            <li>P0 mı P1 mi gerekiyor, birlikte netleştiririz</li>
+            <li>Eğitim ve sınav için doğru adrese yönlendiririm</li>
+            <li>Lisansını aldıktan sonra işi kurma kısmında yanındayım</li>
+          </ul>
+        </div>
+        <div class="price"><div><div class="amount" style="font-size:30px">Ücretsiz</div><div class="unit">DM ile</div></div><a class="btn primary" href="#talep" data-pick="ehliyet">DM'den yaz</a></div>
+      </div>
+      <div class="pack">
+        <div class="id">PKT-01</div>
+        <div class="body">
+          <span class="pill">Hemen teslim</span>
+          <h3>Pilot Şablon Paketi</h3>
+          <p class="lede">Excel ve Google Sheets'te açılan iki hazır araç.</p>
+          <ul>
+            <li><b>İHA Uçuş Defteri:</b> uçuş kaydı, otomatik süre hesabı, batarya döngü takibi, bakım hatırlatma, aylık ve İHA bazında saat özeti</li>
+            <li><b>Fiyat Teklif Hesaplayıcı:</b> ekip, yakıt, konaklama, amortisman, sigorta ve yazılım payıyla başa baş fiyatın; yazdırılabilir teklif sayfası</li>
+          </ul>
+        </div>
+        <div class="price"><div><div class="amount">750 ₺</div><div class="unit">tek seferlik · KDV dahil</div></div><a class="btn ghost" href="#talep" data-pick="sablon">Seç</a></div>
+      </div>
+      <div class="pack">
+        <div class="id">PKT-02</div>
+        <div class="body">
+          <span class="pill">En çok istenen</span>
+          <h3>Birebir Danışmanlık · 60 dk</h3>
+          <p class="lede">Online görüşme. Senin durumuna özel yol haritası.</p>
+          <ul>
+            <li>Lisans geçişi, İHA kaydı ve uçuş izni süreçlerinde nerede olduğun</li>
+            <li>Hangi işi, hangi ekipmanla, hangi fiyata alabileceğin</li>
+            <li>Görüşme sonrası yazılı özet ve yapılacaklar listesi</li>
+            <li>Şablon Paketi hediye</li>
+          </ul>
+        </div>
+        <div class="price"><div><div class="amount">1.500 ₺</div><div class="unit">görüşme başı · KDV dahil</div></div><a class="btn primary" href="#talep" data-pick="danismanlik">Seç</a></div>
+      </div>
+      <div class="pack">
+        <div class="id">PKT-03</div>
+        <div class="body">
+          <span class="pill">Firmalar için</span>
+          <h3>İşletme Dosyası Hazırlığı</h3>
+          <p class="lede">Birden fazla İHA ile çalışan tarım, haritalama ve denetim firmaları için.</p>
+          <ul>
+            <li>Uçuş operasyon el kitabı taslağı (görevler, prosedürler, acil durumlar)</li>
+            <li>Hafif İHA İşleticisi sertifikası talep dosyası için belge düzeni</li>
+            <li>Pilot, ekipman ve bakım kayıt sistemi kurulumu</li>
+          </ul>
+        </div>
+        <div class="price"><div><div class="amount" style="font-size:30px">Teklif</div><div class="unit">kapsama göre</div></div><a class="btn ghost" href="#talep" data-pick="dosya">Seç</a></div>
+      </div>
+      <div class="pack">
+        <div class="id">PKT-04</div>
+        <div class="body">
+          <span class="pill soon">Yakında · ön kayıt</span>
+          <h3>P1 Ticari Başlangıç Rehberi</h3>
+          <p class="lede">Yeni talimata göre ticari drone işini kurmanın adım adım dijital rehberi. Ön kayıt yaptırana çıkış indirimi.</p>
+        </div>
+        <div class="price"><div><div class="amount" style="font-size:30px">Ön kayıt</div><div class="unit">ücretsiz</div></div><a class="btn ghost" href="#talep" data-pick="rehber">Seç</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pilot">
+  <div class="wrap pilot">
+    <div>
+      <div class="tag">03 · Pilot</div>
+      <h2 style="margin:12px 0 18px">Adem Yıldız</h2>
+      <p class="lede">Tarım dronlarından DJI Enterprise platformlarına, LiDAR taramadan otonom istasyon kurulumlarına kadar sahada uçuyor. Üniversitelerde ve kurumlarda İHA pilot eğitimleri ve farkındalık eğitimleri verdi. Kamu ve kurum projelerinde teknik şartname, mevzuat analizi ve saha operasyon dokümanları hazırlıyor.</p>
+      <p class="lede" style="margin-top:14px">droneatlastr'de İHATTYS ve yeni mevzuat üzerine kısa videolar paylaşıyor.</p>
+    </div>
+    <div class="facts">
+      <div class="fact"><div class="n">500+</div><div class="l">Uçuş saati</div></div>
+      <div class="fact"><div class="n">18+</div><div class="l">Platform</div></div>
+      <div class="fact"><div class="n">100+</div><div class="l">Eğitim / demo katılımcısı</div></div>
+      <div class="fact"><div class="n" style="font-size:30px">İHA-1 · İHA-2</div><div class="l">SHGM pilot lisansı</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="talep">
+  <div class="wrap order">
+    <div>
+      <div class="tag">04 · Talep</div>
+      <h2 style="margin:12px 0 18px">Mesajını hazırla, DM'den gönder</h2>
+      <p class="lede">Formu doldur, mesajın aşağıda hazırlansın. Kopyalayıp Instagram'dan <b>@droneatlastr</b> hesabına gönder. Ödeme ve görüşme saatini oradan birlikte netleştiririz.</p>
+      <div class="cta-row"><a class="btn ghost" href="https://ig.me/m/droneatlastr">Instagram DM'i aç</a></div>
+      <p class="fine" style="margin-top:10px">Bağlantı açılmazsa: instagram.com/droneatlastr</p>
+    </div>
+    <form id="f" novalidate>
+      <label for="ad">Ad Soyad<input type="text" id="ad" autocomplete="name" placeholder="Adın"></label>
+      <label for="paket">Paket
+        <select id="paket">
+          <option value="Ücretsiz kontrol listesi">Ücretsiz kontrol listesi</option>
+          <option value="Ehliyet almak istiyorum (P0/P1)" data-k="ehliyet">Ehliyet almak istiyorum (P0/P1)</option>
+          <option value="Pilot Şablon Paketi (750 ₺)" data-k="sablon">Pilot Şablon Paketi (750 ₺)</option>
+          <option value="Birebir Danışmanlık 60 dk (1.500 ₺)" data-k="danismanlik">Birebir Danışmanlık 60 dk (1.500 ₺)</option>
+          <option value="İşletme Dosyası Hazırlığı (teklif)" data-k="dosya">İşletme Dosyası Hazırlığı (teklif)</option>
+          <option value="P1 Rehberi ön kayıt" data-k="rehber">P1 Rehberi ön kayıt</option>
+        </select>
+      </label>
+      <label for="belgeSel">Mevcut belgen
+        <select id="belgeSel"><option>Belgem yok</option><option selected>İHA0</option><option>İHA1</option><option>İHA2</option><option>İHA3</option></select>
+      </label>
+      <label for="not">Kısaca durumun<textarea id="not" placeholder="Örn. Mini 4 Pro'm var, emlak çekimi yapmak istiyorum, nereden başlamalıyım?"></textarea></label>
+      <pre id="msg" aria-live="polite"></pre>
+      <button class="btn primary" type="submit" id="copy">Mesajı kopyala</button>
+      <div class="status" id="status"></div>
+    </form>
+  </div>
+</section>
+
+<section id="sss">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="tag">05 · Sık sorulanlar</div>
+      <div><h2>Netleştirelim</h2></div>
+    </div>
+    <details open><summary>Lisans eğitimi veriyor musun?</summary><p>Hayır. P0, P1, P2 lisansı için gereken eğitim ve sınav SHGM'nin yetkilendirdiği kurumlar üzerinden yürür. Ben lisans sonrası ticari işi kurma, kayıt ve izin süreçleri, fiyatlama ve operasyon düzeni konusunda danışmanlık veriyorum.</p></details>
+    <details><summary>İHA0 belgem var, ne yapmalıyım?</summary><p>Talimata göre İHA0 belgesi P0'a denk geliyor. KDM-ORG üzerinden P0 intibak eğitimini 31.07.2027'ye kadar tamamlaman gerekiyor; uçuş tecrüben kredilendiriliyor (Md.29). İHA1, İHA2 ve İHA3 sahipleri için de aynı süreç P1 ve P2 intibakıyla işliyor.</p></details>
+    <details><summary>Şablonlar hangi programda çalışır?</summary><p>Microsoft Excel ve Google Sheets'te açılır. Dosyalarda sarı hücreler senin dolduracağın alanlardır, gerisi otomatik hesaplanır. İçindeki tüm sayılar örnektir, kendi değerlerini girmen gerekir.</p></details>
+    <details><summary>Görüşme nasıl yapılıyor?</summary><p>Online, yaklaşık 60 dakika. Görüşmeden önce kısa bir soru listesi gönderiyorum; sonrasında yazılı özet ve yapılacaklar listesi geliyor.</p></details>
+    <details><summary>Resmi onayı sen mi veriyorsun?</summary><p>Hayır. Lisans, kayıt, izin ve sertifika kararlarını yalnızca SHGM verir. Danışmanlık, başvurunu doğru ve eksiksiz hazırlamana yardım eder; sonucunu garanti etmez.</p></details>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="mono">droneatlastr · Adem Yıldız · Ankara</div>
+    <div>Bu sayfadaki mevzuat bilgileri SHT-İHA (30.07.2026) metnine dayanır; bilgilendirme amaçlıdır, hukuki görüş değildir. Güncel metin için: web.shgm.gov.tr</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // Geri sayım
+  var end = new Date(2027,6,31), now = new Date();
+  var t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var d = Math.round((end - t0)/86400000);
+  document.getElementById('days').textContent = d > 0 ? d : 0;
+  (function(){
+    if (d <= 0) { document.getElementById('dm').textContent = 'Geçiş süresi doldu'; return; }
+    var y=t0.getFullYear(), m=t0.getMonth(), day=t0.getDate();
+    var months=(end.getFullYear()-y)*12+(end.getMonth()-m);
+    var anchor=new Date(y, m+months, day);
+    if (anchor > end) { months--; anchor=new Date(y, m+months, day); }
+    var rest=Math.round((end-anchor)/86400000);
+    document.getElementById('dm').textContent = '≈ ' + months + ' ay ' + rest + ' gün';
+  })();
+  function p(n){return (n<10?'0':'')+n}
+  document.getElementById('today').textContent = p(t0.getDate())+'.'+p(t0.getMonth()+1)+'.'+t0.getFullYear();
+
+  // Eşleme
+  var data = {
+    'yok': ['Belge yok','P0 / P1',[
+      'Amatör uçuş için P0, ticari uçuş için P1 lisansı gerekiyor.',
+      'Ticari çalışmayı düşünüyorsan doğrudan P1 hedefle.',
+      'P0 ve P1 için sağlık raporu yerine KDM-ERP\'de öz-beyan veriliyor (Md.15/6).']],
+    '0': ['İHA0','P0',[
+      'İHA0 belgeleri P0 olarak değerlendiriliyor.',
+      'KDM-ORG üzerinden P0 intibak eğitimini 31.07.2027\'ye kadar tamamlaman gerekiyor (Md.29).',
+      'P0 görüş hattında amatör uçuşları kapsar. Ticari uçuş için P1 gerekir.']],
+    '1': ['İHA1','P1',[
+      'İHA1 belgeleri P1 olarak değerlendiriliyor; P1 intibakını KDM-ORG üzerinden 31.07.2027\'ye kadar tamamlaman gerekiyor (Md.29).',
+      'P1 görüş hattında ticari uçuşları kapsar.',
+      'Uçuş yetkisi veren operasyonel lisans ayrıca KDM-ERP\'den alınıyor (Md.15/4).']],
+    '2': ['İHA2','P2',[
+      'İHA2 belgeleri P2 olarak değerlendiriliyor; P2 intibakı 31.07.2027\'ye kadar (Md.29).',
+      'P2 görüş hattı ötesi ve yüksek riskli operasyonları kapsar.',
+      'P2 için en az üçüncü sınıf geçerli sağlık sertifikası gerekiyor.']],
+    '3': ['İHA3','P2',[
+      'İHA3 belgeleri de P2 olarak değerlendiriliyor; P2 intibakı 31.07.2027\'ye kadar (Md.29).',
+      'P2 görüş hattı ötesi ve yüksek riskli operasyonları kapsar.',
+      'P2 için en az üçüncü sınıf geçerli sağlık sertifikası gerekiyor.']]
+  };
+  var labels = {'yok':'Belgem yok','0':'İHA0','1':'İHA1','2':'İHA2','3':'İHA3'};
+  function render(v){
+    var x = data[v];
+    document.getElementById('m-old').textContent = x[0];
+    document.getElementById('m-new').textContent = x[1];
+    var ul = document.getElementById('m-list'); ul.innerHTML='';
+    x[2].forEach(function(s){var li=document.createElement('li'); li.textContent=s; ul.appendChild(li);});
+    document.getElementById('m-cta').style.display = (v==='yok' || v==='0') ? 'block' : 'none';
+    var sel = document.getElementById('belgeSel');
+    for (var i=0;i<sel.options.length;i++){ if(sel.options[i].text===labels[v]) sel.selectedIndex=i; }
+    buildMsg();
+  }
+  document.querySelectorAll('input[name=belge]').forEach(function(r){
+    r.addEventListener('change', function(){ render(r.value); });
+  });
+
+  // Paket seçimi
+  document.querySelectorAll('[data-pick]').forEach(function(a){
+    a.addEventListener('click', function(){
+      var k=a.getAttribute('data-pick'), sel=document.getElementById('paket');
+      for (var i=0;i<sel.options.length;i++){ if(sel.options[i].getAttribute('data-k')===k) sel.selectedIndex=i; }
+      if (k==='ehliyet') { var bs=document.getElementById('belgeSel'); if (bs.value!=='İHA0') bs.selectedIndex=0; }
+      buildMsg();
+    });
+  });
+
+  // Mesaj
+  function buildMsg(){
+    var ad = document.getElementById('ad').value.trim() || '[adın]';
+    var paket = document.getElementById('paket').value;
+    var belge = document.getElementById('belgeSel').value;
+    var not = document.getElementById('not').value.trim();
+    var m = 'Merhaba, ben ' + ad + '.\nİlgilendiğim: ' + paket + '\nMevcut belgem: ' + belge;
+    if (not) m += '\nDurumum: ' + not;
+    document.getElementById('msg').textContent = m;
+    return m;
+  }
+  ['ad','paket','belgeSel','not'].forEach(function(id){
+    var el=document.getElementById(id); el.addEventListener('input', buildMsg); el.addEventListener('change', buildMsg);
+  });
+  document.getElementById('f').addEventListener('submit', function(e){
+    e.preventDefault();
+    var m = buildMsg(), st = document.getElementById('status');
+    try {
+      navigator.clipboard.writeText(m).then(function(){ st.textContent='Kopyalandı. Şimdi Instagram DM\'e yapıştır.'; },
+        function(){ st.textContent='Kopyalanamadı; yukarıdaki metni seçip elle kopyala.'; });
+    } catch(err){ st.textContent='Kopyalanamadı; yukarıdaki metni seçip elle kopyala.'; }
+  });
+  render('0');
+
+  // Kontur haritası
+  var c = document.getElementById('contour'), ctx = c.getContext('2d');
+  function draw(){
+    var w = c.clientWidth, h = c.clientHeight, dpr = window.devicePixelRatio||1;
+    c.width = w*dpr; c.height = h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle = 'rgba(159,176,204,.10)'; ctx.lineWidth = 1;
+    for (var gx=0; gx<w; gx+=48){ ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,h); ctx.stroke(); }
+    for (var gy=0; gy<h; gy+=48){ ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(w,gy); ctx.stroke(); }
+    var cx = w*0.78, cy = h*0.55;
+    for (var k=1; k<16; k++){
+      ctx.beginPath();
+      for (var a=0; a<=Math.PI*2+0.01; a+=0.05){
+        var r = k*26 + 10*Math.sin(a*3+k*0.6) + 6*Math.cos(a*5-k);
+        var x = cx + r*Math.cos(a)*1.35, y = cy + r*Math.sin(a);
+        if (a===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = k%5===0 ? 'rgba(242,140,40,.35)' : 'rgba(159,176,204,.16)';
+      ctx.stroke();
+    }
+    ctx.fillStyle='rgba(242,140,40,.9)'; ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2); ctx.fill();
+  }
+  draw(); window.addEventListener('resize', draw);
+})();
+</script>
+</body>
+</html>
