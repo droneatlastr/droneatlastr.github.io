@@ -427,7 +427,8 @@ footer .wrap{display:grid;gap:10px}
     if (not) m += '\nDurumum: ' + not;
     document.getElementById('msg').textContent = m;
     var k = document.getElementById('paket').selectedOptions[0].getAttribute('data-k');
-    document.getElementById('mk-box').style.display = (k==='ehliyet' || belge==='Belgem yok' || belge==='İHA0') ? 'block' : 'none';
+    var ticari = /^İHA[123]$/.test(belge);
+    document.getElementById('mk-box').style.display = (!ticari && (k==='ehliyet' || belge==='Belgem yok' || belge==='İHA0')) ? 'block' : 'none';
     return m;
   }
   ['ad','paket','belgeSel','not'].forEach(function(id){
