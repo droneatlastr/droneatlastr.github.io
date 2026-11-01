@@ -146,7 +146,7 @@ footer .wrap{display:grid;gap:10px}
       <p class="lede">Yeni talimatla İHA0, İHA1, İHA2 ve İHA3 belgeleri P0, P1 ve P2 lisanslarına geçiyor. Ticari uçuş için P1 gerekiyor. Hangi belgenin neye denk geldiğini, ne yapman gerektiğini ve işe nasıl başlayacağını sahada 500 saatten fazla uçmuş bir pilotla adım adım netleştir.</p>
       <div class="cta-row">
         <a class="btn primary" href="#talep">Ücretsiz kontrol listesini iste</a>
-        <a class="btn ghost" href="#talep" data-pick="ehliyet">Ehliyetim yok, P1 istiyorum</a>
+        <a class="btn ghost" href="https://makroair.tr/basvur?k=ADEM" target="_blank" rel="noopener sponsored">Ehliyetim yok, P1 istiyorum</a>
         <a class="btn ghost" href="#paketler">Paketleri gör</a>
       </div>
     </div>
@@ -186,8 +186,9 @@ footer .wrap{display:grid;gap:10px}
         <div class="map"><span id="m-old">İHA0</span><span class="arrow">→</span><span class="new" id="m-new">P0</span></div>
         <ul id="m-list"></ul>
         <div id="m-cta" style="display:none;border:1px solid var(--signal);background:rgba(242,140,40,.08);border-radius:4px;padding:14px 16px">
-          <p style="margin:0 0 10px"><b>P1 almak ya da ehliyet çıkarmak mı istiyorsun?</b> DM'den yaz, sana uygun SHGM yetkili eğitim kurumunu ve izlemen gereken yolu söyleyeyim.</p>
-          <a class="btn primary" href="#talep" data-pick="ehliyet">DM'den yaz</a>
+          <p style="margin:0 0 10px"><b>Ehliyetin yoksa ya da ticari uçmak için P1 almak istiyorsan</b> başvuru formunu doldur, eğitim kurumu seni arasın. Aklına takılan bir şey olursa DM'den de yazabilirsin.</p>
+          <div class="cta-row"><a class="btn primary" href="https://makroair.tr/basvur?k=ADEM" target="_blank" rel="noopener sponsored">Başvuru formunu doldur</a><a class="btn ghost" href="https://ig.me/m/droneatlastr">Önce DM'den sor</a></div>
+          <p class="fine" style="margin:8px 0 0">İş birliği: Bu bağlantı Makroair'e ait bir yönlendirme bağlantısıdır.</p>
         </div>
         <p class="fine">Kaynak: SHT-İHA (30.07.2026) metni, ilgili maddeler parantez içinde. Bu araç bilgilendirme amaçlıdır; kendi durumun için güncel talimat metnini ve SHGM duyurularını esas al.</p>
       </div>
@@ -205,16 +206,17 @@ footer .wrap{display:grid;gap:10px}
       <div class="pack featured">
         <div class="id">PKT-00</div>
         <div class="body">
-          <span class="pill">Ücretsiz yönlendirme</span>
+          <span class="pill">Ücretsiz başvuru</span>
           <h3>Ehliyetim yok · P1 almak istiyorum</h3>
-          <p class="lede">Hiç belgen yoksa ya da ticari uçmak için P1 lisansı almak istiyorsan bana DM'den yaz. Hangi lisansı alman gerektiğini ve sana uygun, SHGM'nin yetkilendirdiği eğitim kurumunu söyleyeyim.</p>
+          <p class="lede">Hiç belgen yoksa, İHA0 (amatör/sportif) belgen varsa ya da ticari uçmak için P1 almak istiyorsan başvuru formunu doldur; eğitim kurumu seninle iletişime geçsin. Kararsızsan önce DM'den yaz.</p>
           <ul>
             <li>P0 mı P1 mi gerekiyor, birlikte netleştiririz</li>
-            <li>Eğitim ve sınav için doğru adrese yönlendiririm</li>
+            <li>Eğitim ve sınav için başvurun doğrudan eğitim kurumuna gider</li>
             <li>Lisansını aldıktan sonra işi kurma kısmında yanındayım</li>
           </ul>
+          <p class="fine" style="margin:10px 0 0">İş birliği: Form bağlantısı Makroair'e ait bir yönlendirme bağlantısıdır.</p>
         </div>
-        <div class="price"><div><div class="amount" style="font-size:30px">Ücretsiz</div><div class="unit">DM ile</div></div><a class="btn primary" href="#talep" data-pick="ehliyet">DM'den yaz</a></div>
+        <div class="price"><div><div class="amount" style="font-size:30px">Ücretsiz</div><div class="unit">başvuru formu</div></div><a class="btn primary" href="https://makroair.tr/basvur?k=ADEM" target="_blank" rel="noopener sponsored">Formu doldur</a></div>
       </div>
       <div class="pack">
         <div class="id">PKT-01</div>
@@ -312,6 +314,11 @@ footer .wrap{display:grid;gap:10px}
       <label for="belgeSel">Mevcut belgen
         <select id="belgeSel"><option>Belgem yok</option><option selected>İHA0</option><option>İHA1</option><option>İHA2</option><option>İHA3</option></select>
       </label>
+      <div id="mk-box" style="display:none;border:1px solid var(--signal);background:rgba(242,140,40,.08);border-radius:4px;padding:12px 14px">
+        <p style="margin:0 0 8px"><b>Ehliyet almak istiyorsan</b> buradan başvur, eğitim kurumu seni arasın:</p>
+        <a class="btn primary" href="https://makroair.tr/basvur?k=ADEM" target="_blank" rel="noopener sponsored">Başvuru formunu doldur</a>
+        <p class="fine" style="margin:8px 0 0">İş birliği: Makroair yönlendirme bağlantısı. Sorun varsa aşağıdaki mesajı DM'den gönderebilirsin.</p>
+      </div>
       <label for="not">Kısaca durumun<textarea id="not" placeholder="Örn. Mini 4 Pro'm var, emlak çekimi yapmak istiyorum, nereden başlamalıyım?"></textarea></label>
       <pre id="msg" aria-live="polite"></pre>
       <button class="btn primary" type="submit" id="copy">Mesajı kopyala</button>
@@ -337,7 +344,7 @@ footer .wrap{display:grid;gap:10px}
 
 <footer>
   <div class="wrap">
-    <div class="mono">droneatlastr · Adem Yıldız · Ankara</div>
+    <div class="mono">droneatlastr · Ankara</div>
     <div>Bu sayfadaki mevzuat bilgileri SHT-İHA (30.07.2026) metnine dayanır; bilgilendirme amaçlıdır, hukuki görüş değildir. Güncel metin için: web.shgm.gov.tr</div>
   </div>
 </footer>
@@ -419,6 +426,8 @@ footer .wrap{display:grid;gap:10px}
     var m = 'Merhaba, ben ' + ad + '.\nİlgilendiğim: ' + paket + '\nMevcut belgem: ' + belge;
     if (not) m += '\nDurumum: ' + not;
     document.getElementById('msg').textContent = m;
+    var k = document.getElementById('paket').selectedOptions[0].getAttribute('data-k');
+    document.getElementById('mk-box').style.display = (k==='ehliyet' || belge==='Belgem yok' || belge==='İHA0') ? 'block' : 'none';
     return m;
   }
   ['ad','paket','belgeSel','not'].forEach(function(id){
